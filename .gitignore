@@ -5,3 +5,8 @@ sdk/JN-SW-4270
 *.iml
 out
 gen
+Source/ZigbeeNodeControlBridge/zps_gen.h
+Source/ZigbeeNodeControlBridge/zps_gen.c
+Source/ZigbeeNodeControlBridge/pdum_gen.h
+Source/ZigbeeNodeControlBridge/pdum_gen.c
+Source/ZigbeeNodeControlBridge/pdum_apdu.S
