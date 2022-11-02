@@ -88,14 +88,18 @@ ifneq ($(DEBUG), NONE)
 DEBUG_NAME  = _DEBUG_$(DEBUG)
 endif
 
+ifeq ($(OTA), 1)
+OTA_NAME  = _OTA
+endif
+
 VERSION ?= $(shell git describe --abbrev=1 --always | sed -r 's/(-.+-g|[\r\n])//g' | sed -r 's/[^a-f0-9]/0/g')
 
 $(info Version $(VERSION))
 
 ifneq ($(GP_SUPPORT), 1)
-GENERATED_FILE_NAME    ?= $(TARGET)_$(VERSION)_$(JENNIC_CHIP)_$(NODE)_$(BAUD)$(DEBUG_NAME)
+GENERATED_FILE_NAME    ?= $(TARGET)_$(VERSION)_$(JENNIC_CHIP)_$(NODE)_$(BAUD)$(OTA_NAME)$(DEBUG_NAME)
 else
-GENERATED_FILE_NAME    ?= $(TARGET)_$(VERSION)_$(JENNIC_CHIP)_GP_Proxy_$(NODE)_$(BAUD)$(DEBUG_NAME)
+GENERATED_FILE_NAME    ?= $(TARGET)_$(VERSION)_$(JENNIC_CHIP)_GP_Proxy_$(NODE)_$(BAUD)$(OTA_NAME)$(DEBUG_NAME)
 endif
 
 ###############################################################################
