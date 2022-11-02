@@ -884,10 +884,15 @@ PUBLIC void APP_vProcessIncomingSerialCommands ( uint8    u8RxByte )
                 u8SrcEp                =  au8LinkRxBuffer[ offset++ ];
                 u16Clusterid           =  ZNC_RTN_U16_OFFSET ( au8LinkRxBuffer , offset, offset );
                 u8DstAddrMode          =  au8LinkRxBuffer[ offset++ ];
-                uDstAddress.u64Addr    =  ZNC_RTN_U64_OFFSET ( au8LinkRxBuffer , offset, offset );
+                
+				if(u8DstAddrMode == 0x1)
+				{
+					uDstAddress.u16Addr = ZNC_RTN_U16_OFFSET( au8LinkRxBuffer , offset , offset);
 
-                if(u8DstAddrMode == 0x3)
+				}else 
+				if(u8DstAddrMode == 0x3)
                 {
+                	uDstAddress.u64Addr = ZNC_RTN_U64_OFFSET ( au8LinkRxBuffer , offset, offset );
                     u8DstEp    =  au8LinkRxBuffer [ offset++ ] ;
                 }
 
