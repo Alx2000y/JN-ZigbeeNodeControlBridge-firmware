@@ -376,11 +376,11 @@ PRIVATE void APP_ZCL_cbEndpointCallback ( tsZCL_CallBackEvent*    psEvent )
 
     if (sZllState.u8RawMode == RAW_MODE_ON){
         ZPS_tsAfEvent* psStackEvent = psEvent->pZPSevent;
-        if (psEvent->u8TransactionSequenceNumber == 0 || tmpSqn!=(psEvent->u8TransactionSequenceNumber+psEvent->pZPSevent->uEvent.sApsDataIndEvent.uSrcAddress.u16Addr))
+        if (psEvent->u8TransactionSequenceNumber == 0 || ( psEvent->eEventType == E_ZCL_CBET_CLUSTER_CUSTOM && psEvent->uMessage.sClusterCustomMessage.u16ClusterId == OTA_CLUSTER_ID ) || tmpSqn!=(psEvent->u8TransactionSequenceNumber+psEvent->pZPSevent->uEvent.sApsDataIndEvent.uSrcAddress.u16Addr))
         {
 	        tmpSqn=(psEvent->u8TransactionSequenceNumber+psEvent->pZPSevent->uEvent.sApsDataIndEvent.uSrcAddress.u16Addr);
-      		if (psEvent->eEventType != E_ZCL_CBET_CLUSTER_UPDATE    && psEvent->eEventType != E_ZCL_CBET_UNHANDLED_EVENT &&
-                psEvent->eEventType != E_ZCL_CBET_REPORT_ATTRIBUTES && psEvent->eEventType != E_ZCL_CBET_READ_ATTRIBUTES_RESPONSE)
+      		if (( psEvent->eEventType == E_ZCL_CBET_CLUSTER_CUSTOM && psEvent->uMessage.sClusterCustomMessage.u16ClusterId == OTA_CLUSTER_ID ) || (psEvent->eEventType != E_ZCL_CBET_CLUSTER_UPDATE    && psEvent->eEventType != E_ZCL_CBET_UNHANDLED_EVENT &&
+                psEvent->eEventType != E_ZCL_CBET_REPORT_ATTRIBUTES && psEvent->eEventType != E_ZCL_CBET_READ_ATTRIBUTES_RESPONSE))
             {
                 Znc_vSendDataIndicationToHost(psStackEvent, au8LinkTxBuffer);
                 return;
@@ -388,6 +388,7 @@ PRIVATE void APP_ZCL_cbEndpointCallback ( tsZCL_CallBackEvent*    psEvent )
         }
         else
         {
+        	vLog_Printf(TRACE_ZCL, LOG_DEBUG,  "DROP EVT: status 0x%02x addr 0x%04x\r\n", psEvent->eZCL_Status , psEvent->pZPSevent->uEvent.sApsDataIndEvent.uSrcAddress.u16Addr);
             return;
         }
     }
@@ -403,7 +404,7 @@ PRIVATE void APP_ZCL_cbEndpointCallback ( tsZCL_CallBackEvent*    psEvent )
         case E_ZCL_CBET_READ_ATTRIBUTES_RESPONSE:
         case E_ZCL_CBET_TIMER:
         case E_ZCL_CBET_ZIGBEE_EVENT:
-            vLog_Printf(TRACE_ZCL, LOG_DEBUG,  "EP EVT:No action\r\n", psEvent->eZCL_Status );
+            vLog_Printf(TRACE_ZCL, LOG_DEBUG,  "EP EVT:No action 0x%02x\r\n", psEvent->eZCL_Status );
             break;
 
         case E_ZCL_CBET_ERROR:
