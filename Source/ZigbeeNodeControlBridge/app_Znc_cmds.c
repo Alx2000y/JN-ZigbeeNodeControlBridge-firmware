@@ -3844,7 +3844,6 @@ PRIVATE ZPS_teStatus APP_eApsProfileDataRequest ( ZPS_tsAfProfileDataReq*    psP
     else
     {
         hAPduInst =  PDUM_hAPduAllocateAPduInstance ( apduZDP );
-        vLog_Printf(TRACE_APP,LOG_DEBUG, "PDUM_hAPduAllocateAPduInstance \n");
     }
 
     if ( PDUM_INVALID_HANDLE != hAPduInst )
@@ -3867,6 +3866,9 @@ PRIVATE ZPS_teStatus APP_eApsProfileDataRequest ( ZPS_tsAfProfileDataReq*    psP
                                                psProfileDataReq,
                                                pu8Seq );
         }
+	    PDUM_eAPduFreeAPduInstance(hAPduInst);
+		vLog_Printf(TRACE_APP,LOG_DEBUG, "PDUM_eAPduFreeAPduInstance \n");
+
     }else {
         vLog_Printf(TRACE_APP,LOG_DEBUG, "PDUM_INVALID_HANDLE \n");
     }
