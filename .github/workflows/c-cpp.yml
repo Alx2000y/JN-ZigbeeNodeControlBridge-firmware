@@ -20,8 +20,8 @@ jobs:
       - name: make
         id: make
         run: |
-          for BAUD in 115200 1000000; do for GP in 0 1; do for DEBUG in NONE LOG; do for OTA in 0 1; do
-            make -j$(($(nproc)+1)) -C $BUILD_DIR GP_SUPPORT=$GP BAUD=$BAUD JENNIC_CHIP=JN5169 JENNIC_CHIP_FAMILY=JN516x DEBUG=$DEBUG OTA=$OTA
+          for BAUD in 115200 1000000; do for GP in 0 1; do for DEBUG in NONE LOG; do
+            make -j$(($(nproc)+1)) -C $BUILD_DIR GP_SUPPORT=$GP BAUD=$BAUD JENNIC_CHIP=JN5169 JENNIC_CHIP_FAMILY=JN516x DEBUG=$DEBUG OTA=0
             make -C $BUILD_DIR BAUD=0 clean
           done done done done
           echo "::set-output name=status::success"
