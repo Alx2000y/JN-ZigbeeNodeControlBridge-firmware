@@ -388,6 +388,7 @@ PRIVATE void APP_ZCL_cbEndpointCallback ( tsZCL_CallBackEvent*    psEvent )
         }
         else
         {
+        	vLog_Printf(TRACE_ZCL, LOG_DEBUG,  "DROP EVT: status 0x%02x addr 0x%04x\r\n", psEvent->eZCL_Status , psEvent->pZPSevent->uEvent.sApsDataIndEvent.uSrcAddress.u16Addr);
             return;
         }
     }
@@ -403,7 +404,7 @@ PRIVATE void APP_ZCL_cbEndpointCallback ( tsZCL_CallBackEvent*    psEvent )
         case E_ZCL_CBET_READ_ATTRIBUTES_RESPONSE:
         case E_ZCL_CBET_TIMER:
         case E_ZCL_CBET_ZIGBEE_EVENT:
-            vLog_Printf(TRACE_ZCL, LOG_DEBUG,  "EP EVT:No action\r\n", psEvent->eZCL_Status );
+            vLog_Printf(TRACE_ZCL, LOG_DEBUG,  "EP EVT:No action 0x%02x\r\n", psEvent->eZCL_Status );
             break;
 
         case E_ZCL_CBET_ERROR:
