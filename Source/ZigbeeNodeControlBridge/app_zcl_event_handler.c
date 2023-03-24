@@ -347,7 +347,7 @@ PRIVATE void APP_ZCL_cbGeneralCallback ( tsZCL_CallBackEvent*    psEvent )
             break;
 
         default:
-            vLog_Printf ( TRACE_ZCL,LOG_DEBUG, "Invalid event type\r\n" );
+            vLog_Printf ( TRACE_ZCL,LOG_DEBUG, "Invalid event type %d\r\n", psEvent->eEventType );
             break;
     }
 #endif

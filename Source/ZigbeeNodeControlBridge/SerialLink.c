@@ -169,7 +169,7 @@ PUBLIC bool bSL_ReadMessage(uint16 *pu16Type, uint16 *pu16Length, uint16 u16MaxL
                     return(TRUE);
                 }
             }
-            DBG_vPrintf(DEBUG_SL, "\nCRC BAD");
+            DBG_vPrintf(DEBUG_SL, "\nCRC BAD %02x <> %02x",u8CRC,u8SL_CalculateCRC(*pu16Type, *pu16Length, pu8Message));
             break;
 
         default:
