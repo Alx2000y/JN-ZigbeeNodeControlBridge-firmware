@@ -389,6 +389,7 @@ PRIVATE void APP_ZCL_cbEndpointCallback ( tsZCL_CallBackEvent*    psEvent )
         else
         {
         	vLog_Printf(TRACE_ZCL, LOG_DEBUG,  "DROP EVT: status 0x%02x addr 0x%04x\r\n", psEvent->eZCL_Status , psEvent->pZPSevent->uEvent.sApsDataIndEvent.uSrcAddress.u16Addr);
+        	//Znc_vSendDataIndicationToHost(psStackEvent, au8LinkTxBuffer);
             return;
         }
     }

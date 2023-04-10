@@ -2401,6 +2401,7 @@ PUBLIC void APP_GetNetBackupTbl( void ) {
         ZNC_BUF_U8_UPD ( &au8LinkTxBuffer [ u16TxSize ] , tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[i] , u16TxSize);
         i++;
     }
+    ZNC_BUF_U16_UPD (&au8LinkTxBuffer[u16TxSize], tsAplAib->psAplDefaultTCAPSLinkKey->u32OutgoingFrameCounter,       u16TxSize);
     vSL_WriteMessage(E_SL_MSG_NET_BACKUP_RESPONSE, u16TxSize, au8LinkTxBuffer, 0 );
 }
 PRIVATE void APP_NetRestore(uint8 *pu8LinkRxBuffer, uint16 u16PacketLength) {
@@ -2411,11 +2412,16 @@ PRIVATE void APP_NetRestore(uint8 *pu8LinkRxBuffer, uint16 u16PacketLength) {
     sZllState.eNodeState  =  E_RUNNING;
     PDM_eSaveRecordData(PDM_ID_APP_ZLL_CMSSION, &sZllState, sizeof(sZllState));
     ZPS_tsNwkNib * psNib = ZPS_psNwkNibGetHandle(ZPS_pvAplZdoGetNwkHandle());
-    psNib->sTbl.psSecMatSet[0].u8KeySeqNum = pu8LinkRxBuffer[13] ;
+    ZPS_tsAplAib * tsAplAib = ZPS_psAplAibGetAib();
+    psNib->sTbl.psSecMatSet[0].u8KeySeqNum = pu8LinkRxBuffer[13];
     psNib->sTbl.psSecMatSet[0].u8KeyType =  pu8LinkRxBuffer[14];
     for ( i = 0; i < ZPS_SEC_KEY_LENGTH; i++ ) {
         psNib->sTbl.psSecMatSet[0].au8Key[i] =  pu8LinkRxBuffer[15 + i];
-    }     
+    }
+    tsAplAib->psAplDefaultTCAPSLinkKey->u32OutgoingFrameCounter = ZNC_RTN_U16 ( pu8LinkRxBuffer, 31 );
+    for ( i = 0; i < ZPS_SEC_KEY_LENGTH; i++ ) {
+        tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[i] =  pu8LinkRxBuffer[33 + i];
+    }
 	APP_vConfigureDevice ( 0 );
     ZPS_vNwkNibSetChannel ( ZPS_pvAplZdoGetNwkHandle(), pu8LinkRxBuffer[10]);
     ZPS_vNwkNibSetPanId (ZPS_pvAplZdoGetNwkHandle(), ZNC_RTN_U16 ( pu8LinkRxBuffer, 11 ) );
@@ -2428,13 +2434,14 @@ PRIVATE void APP_NetRestore(uint8 *pu8LinkRxBuffer, uint16 u16PacketLength) {
     /* Add Key data into the NIB in first Key entry */
     ZPS_vNwkNibSetKeySeqNum ( ZPS_pvAplZdoGetNwkHandle(), pu8LinkRxBuffer[9] );
 	ZPS_eAplAibSetApsTrustCenterAddress ( ZPS_u64AplZdoGetIeeeAddr() );	
+	ZPS_eAplZdoGroupEndpointAdd ( 0x385, 0x01 );
     ZPS_vSaveAllZpsRecords();
 
     bResetIssued    =  TRUE;
     ZTIMER_eStart( u8IdTimer, ZTIMER_TIME_MSEC ( 1 ) );
 }
 PRIVATE void APP_DeviceRestore(uint8 *pu8LinkRxBuffer, uint16 u16PacketLength) {
-    uint16 u16DataBytesRead;
+    uint16 u16DataBytesRead, u16Location;
     uint16 i;
 	uint64 u64Address;
 	uint16 u16Address;
@@ -2527,14 +2534,18 @@ PRIVATE void APP_DeviceRestore(uint8 *pu8LinkRxBuffer, uint16 u16PacketLength) {
 	}
     ZPS_eAplZdoAddReplaceLinkKey( u64Address, au8Key,   ZPS_APS_UNIQUE_LINK_KEY); //ZPS_APS_GLOBAL_LINK_KEY
     //ZPS_bAplZdoTrustCenterSetDevicePermissions(u64Address, ZPS_DEVICE_PERMISSIONS_ALL_PERMITED);
-    /*
+    
 	bool_t          bCredPresent =  FALSE;
-	bCredPresent = zps_bGetFlashCredential ( u64Address,  &au8Key, &u16DataBytesRead, FALSE, FALSE  );
+	bCredPresent = zps_bGetFlashCredential ( u64Address,  &au8Key, &u16Location, FALSE, FALSE  );
     if(bCredPresent) {
-       	//asTclkStruct[u16DataBytesRead].u16TclkRetries = ZNC_RTN_U16 ( pu8LinkRxBuffer, 31 );
-       	//PDM_eSaveRecordData(PDM_ID_INTERNAL_TC_LOCATIONS, &asTclkStruct, sizeof( ZPS_TclkDescriptorEntry ) * ZNC_MAX_TCLK_DEVICES );
+    	//ZPS_TclkDescriptorEntry tmpZPS_TclkDescriptorEntry[ZNC_MAX_TCLK_DEVICES];
+	    //PDM_eReadDataFromRecord ( PDM_ID_INTERNAL_TC_LOCATIONS, &tmpZPS_TclkDescriptorEntry, sizeof(ZPS_TclkDescriptorEntry) * ZNC_MAX_TCLK_DEVICES, &u16DataBytesRead );
+		//tmpZPS_TclkDescriptorEntry[u16Location].u16TclkRetries = ZNC_RTN_U16 ( pu8LinkRxBuffer, 31 );
+       	asTclkStruct[u16Location].u16TclkRetries = ZNC_RTN_U16 ( pu8LinkRxBuffer, 31 );
+       	PDM_eSaveRecordData(PDM_ID_INTERNAL_TC_LOCATIONS, &asTclkStruct, sizeof( ZPS_TclkDescriptorEntry ) * ZNC_MAX_TCLK_DEVICES );
+       	//PDM_eSaveRecordData(PDM_ID_INTERNAL_TC_LOCATIONS, &tmpZPS_TclkDescriptorEntry, sizeof( ZPS_TclkDescriptorEntry ) * ZNC_MAX_TCLK_DEVICES );
     }
-    */
+    
 	vSL_WriteMessage ( E_SL_MSG_RESTORE_DEVICE_BACKUP_RESPONSE, 1, bStatus, 0 ); // ZPS_E_SUCCESS : ZPS_APL_APS_E_TABLE_FULL
 }
 PUBLIC void APP_GetDevicesBackupTblShow( void ) {
@@ -2585,6 +2596,16 @@ PUBLIC void APP_GetDevicesBackupTblShow( void ) {
 	PDM_eGetBitmap(0xF106, &pu32a, &pu32b);
 	vLog_Printf ( TRUE, LOG_INFO, "\n\nCounter bitmap: %d (%08x) base %d + %d", pu32a + pu32b, pu32a + pu32b, pu32a, pu32b );
 
+	vLog_Printf ( TRUE, LOG_INFO, "\n\n ActiveNeighbourTableSize: %d AddressMapTableSize: %d MacTableSize: %d RoutingTableSize: %d ChildTableSize: %d SecurityMaterialSets: %d BindingTableSize: %d GroupTableSize: %d",
+		ZPS_NEIGHBOUR_TABLE_SIZE, ZPS_ADDRESS_MAP_TABLE_SIZE, ZPS_MAC_ADDRESS_TABLE_SIZE, ZPS_ROUTING_TABLE_SIZE, ZPS_CHILD_TABLE_SIZE, ZPS_BINDING_TABLE_SIZE, ZPS_GROUP_TABLE_SIZE
+	);
+
+    vLog_Printf ( TRUE, LOG_INFO, "NT: Size: %d: Record %d: %d: Total: %d ", thisNib->sTblSize.u16NtActv, sizeof(ZPS_tsNwkActvNtEntry), (thisNib->sTblSize.u16NtActv * sizeof(ZPS_tsNwkActvNtEntry)));
+
+    vLog_Printf ( TRUE, LOG_INFO, "Routing Table: Size: %d: Record %d: %d: Total: %d ", thisNib->sTblSize.u16Rt, sizeof(ZPS_tsNwkRtEntry),(thisNib->sTblSize.u16Rt * sizeof(ZPS_tsNwkRtEntry)));
+
+    vLog_Printf ( TRUE, LOG_INFO, "Route Record: Size: %d: Record %d: %d: Total: %d ", thisNib->sTblSize.u16Rct, sizeof(ZPS_tsNwkRctEntry), (thisNib->sTblSize.u16Rct * sizeof(ZPS_tsNwkRctEntry)));
+
     uint8 tmpBindingTable[ZPS_BINDING_TABLE_SIZE * 8];
     PDM_eReadDataFromRecord ( PDM_ID_INTERNAL_BINDS, &tmpBindingTable,  ZPS_BINDING_TABLE_SIZE * 8, &u16DataBytesRead );
     for(i = 0; i < ZPS_BINDING_TABLE_SIZE * 8; i++) {
@@ -2594,10 +2615,10 @@ PUBLIC void APP_GetDevicesBackupTblShow( void ) {
     ZPS_tsAPdmGroupTableEntry tmpZPS_tsAPdmGroupTableEntry[ZPS_GROUP_TABLE_SIZE];
     PDM_eReadDataFromRecord ( PDM_ID_INTERNAL_GROUPS, &tmpZPS_tsAPdmGroupTableEntry, sizeof(tmpZPS_tsAPdmGroupTableEntry), &u16DataBytesRead );
     for(i = 0; i<ZPS_GROUP_TABLE_SIZE; i++) {
-	    vLog_Printf ( TRUE, LOG_INFO, "\nGroupid: %04x\nBitMap: %04x", tmpZPS_tsAPdmGroupTableEntry[i].u16Groupid, tmpZPS_tsAPdmGroupTableEntry[i].u16BitMap );
+	    vLog_Printf ( TRUE, LOG_INFO, "\nGroupid: %04x BitMap: %04x", tmpZPS_tsAPdmGroupTableEntry[i].u16Groupid, tmpZPS_tsAPdmGroupTableEntry[i].u16BitMap );
     }
 	for(i=0;i<thisNib->sTblSize.u8SecMatSet;i++) {
-	    vLog_Printf ( TRUE, LOG_INFO, "\n\nSecKey: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\nSecKeySeqNum: %02x\nSecKeySeqType: %02x\n", thisNib->sTbl.psSecMatSet[i].au8Key[0], thisNib->sTbl.psSecMatSet[i].au8Key[1], thisNib->sTbl.psSecMatSet[i].au8Key[2], thisNib->sTbl.psSecMatSet[i].au8Key[3], thisNib->sTbl.psSecMatSet[i].au8Key[4], thisNib->sTbl.psSecMatSet[i].au8Key[5], thisNib->sTbl.psSecMatSet[i].au8Key[6], thisNib->sTbl.psSecMatSet[i].au8Key[7], thisNib->sTbl.psSecMatSet[i].au8Key[8], thisNib->sTbl.psSecMatSet[i].au8Key[9], thisNib->sTbl.psSecMatSet[i].au8Key[10], thisNib->sTbl.psSecMatSet[i].au8Key[11], thisNib->sTbl.psSecMatSet[i].au8Key[12], thisNib->sTbl.psSecMatSet[i].au8Key[13], thisNib->sTbl.psSecMatSet[i].au8Key[14], thisNib->sTbl.psSecMatSet[i].au8Key[15], thisNib->sTbl.psSecMatSet[i].u8KeySeqNum, thisNib->sTbl.psSecMatSet[i].u8KeyType );
+	    vLog_Printf ( TRUE, LOG_INFO, "\n\nSecKey: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x SecKeySeqNum: %02x SecKeySeqType: %02x\n", thisNib->sTbl.psSecMatSet[i].au8Key[0], thisNib->sTbl.psSecMatSet[i].au8Key[1], thisNib->sTbl.psSecMatSet[i].au8Key[2], thisNib->sTbl.psSecMatSet[i].au8Key[3], thisNib->sTbl.psSecMatSet[i].au8Key[4], thisNib->sTbl.psSecMatSet[i].au8Key[5], thisNib->sTbl.psSecMatSet[i].au8Key[6], thisNib->sTbl.psSecMatSet[i].au8Key[7], thisNib->sTbl.psSecMatSet[i].au8Key[8], thisNib->sTbl.psSecMatSet[i].au8Key[9], thisNib->sTbl.psSecMatSet[i].au8Key[10], thisNib->sTbl.psSecMatSet[i].au8Key[11], thisNib->sTbl.psSecMatSet[i].au8Key[12], thisNib->sTbl.psSecMatSet[i].au8Key[13], thisNib->sTbl.psSecMatSet[i].au8Key[14], thisNib->sTbl.psSecMatSet[i].au8Key[15], thisNib->sTbl.psSecMatSet[i].u8KeySeqNum, thisNib->sTbl.psSecMatSet[i].u8KeyType );
 	}
 
     vLog_Printf ( TRUE, LOG_INFO, "\nDefault LK MAC: %016llx [%04x] ApsKey: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x Outgoing FC: %d", ZPS_u64NwkNibGetMappedIeeeAddr(ZPS_pvAplZdoGetNwkHandle(),tsAplAib->psAplDefaultTCAPSLinkKey->u16ExtAddrLkup), tsAplAib->psAplDefaultTCAPSLinkKey->u16ExtAddrLkup, tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[0], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[1], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[2], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[3], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[4], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[5], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[6], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[7], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[8], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[9], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[10], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[11], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[12], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[13], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[14], tsAplAib->psAplDefaultTCAPSLinkKey->au8LinkKey[15], tsAplAib->psAplDefaultTCAPSLinkKey->u32OutgoingFrameCounter);
