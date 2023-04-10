@@ -177,6 +177,7 @@ PUBLIC void APP_vHandleAppEvents ( void )
     sAppEvent.eType = APP_E_EVENT_NONE;
     if ( ZQ_bQueueReceive ( &APP_msgAppEvents, &sAppEvent ) )
     {
+		vLog_Printf ( TRACE_APP,LOG_DEBUG, "Got app event %d\n", sAppEvent.eType);
 #ifdef CLD_GREENPOWER
 		if ( sAppEvent.eType == APP_EVENT_POR_RESET_GP_TABLES )
 		{
@@ -911,9 +912,6 @@ PUBLIC void APP_vHandleStackEvents ( ZPS_tsAfEvent*    psStackEvent )
         break;
 
         case ZPS_EVENT_NWK_STATUS_INDICATION:
-            vLog_Printf(TRACE_APP,LOG_DEBUG, "\nNwkStat: Addr:%x Status:%x",
-                    psStackEvent->uEvent.sNwkStatusIndicationEvent.u16NwkAddr,
-                    psStackEvent->uEvent.sNwkStatusIndicationEvent.u8Status);
             vLog_Printf(TRACE_APP,LOG_DEBUG, "\nNwkStat: Addr:%x Status:%x",
                     psStackEvent->uEvent.sNwkStatusIndicationEvent.u16NwkAddr,
                     psStackEvent->uEvent.sNwkStatusIndicationEvent.u8Status);
