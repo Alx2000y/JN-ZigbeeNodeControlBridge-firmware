@@ -692,7 +692,7 @@ PUBLIC void APP_vInitResources ( void )
     vLog_Printf ( TRACE_APPSTART,LOG_DEBUG, "APP: Initialising resources...\n");
     vLog_Printf ( TRACE_APPSTART,LOG_DEBUG, "APP: ZPS_tsAfEvent = %d bytes\n",    sizeof ( ZPS_tsAfEvent ) );
     vLog_Printf ( TRACE_APPSTART,LOG_DEBUG, "APP: zps_tsTimeEvent = %d bytes\n",  sizeof ( zps_tsTimeEvent ) );
-
+    if(sZllState.eState != PDM_UPDATE) {
     /* Initialise the Z timer module */
     ZTIMER_eInit ( asTimers, sizeof(asTimers) / sizeof(ZTIMER_tsTimer));
 
@@ -713,12 +713,15 @@ PUBLIC void APP_vInitResources ( void )
     ZQ_vQueueCreate ( &zps_msgMcpsDcfmInd,    MCPS_QUEUE_SIZE,        sizeof ( MAC_tsMcpsVsDcfmInd ),    (uint8*)asMacMcpsDcfmInd );
     ZQ_vQueueCreate ( &zps_TimeEvents,        TIMER_QUEUE_SIZE,       sizeof ( zps_tsTimeEvent ),        (uint8*)asTimeEvent );
     ZQ_vQueueCreate ( &APP_msgAppEvents,      APP_QUEUE_SIZE,         sizeof ( APP_tsEvent ),            (uint8*)asAppMsg );
+    }
     ZQ_vQueueCreate ( &APP_msgSerialTx,       TX_QUEUE_SIZE,          sizeof ( uint8 ),                  (uint8*)au8AtTxBuffer );
     ZQ_vQueueCreate ( &APP_msgSerialRx,       RX_QUEUE_SIZE,          sizeof ( uint8 ),                  (uint8*)au8AtRxBuffer );
 
+	if(sZllState.eState != PDM_UPDATE) {
 #ifdef CLD_GREENPOWER
 		ZQ_vQueueCreate(&APP_msgGPZCLTimerEvents, GP_TIMER_QUEUE_SIZE,	  sizeof(uint8),   (uint8*)au8GPZCLEvent);
 #endif
+	}
 
     vZCL_RegisterHandleGeneralCmdCallBack (APP_vProfileWideCommandSupportedForCluster );
     DBG_vPrintf(TRACE_APPSTART, "APP: Initialising resources complete\n");
